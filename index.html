@@ -28,7 +28,7 @@
             backdrop-filter: blur(10px);  
             -webkit-backdrop-filter: blur(10px);  
             padding: 10px 0;  
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* 新添加的阴影效果 */  
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);  
         }  
         .dock-icon {  
             width: 50px;  
@@ -102,6 +102,11 @@
 
     <script>  
         const accessKey = 'HdVOw66QEtN6DOv4retJtT-s3Ea-6u_xRvm6do4Tcrg';  
+        const fallbackBackgrounds = [  
+            'https://images.unsplash.com/photo-1470770841072-f978cf4d019e',  
+            'https://images.unsplash.com/photo-1501854140801-50d01698950b',  
+            'https://images.unsplash.com/photo-1497436072909-60f360e1d4b1'  
+        ];  
 
         async function setRandomBackground() {  
             const desktop = document.querySelector('.desktop');  
@@ -111,28 +116,42 @@
             
             try {  
                 const response = await fetch(`https://api.unsplash.com/photos/random?orientation=landscape&query=Wallpapers&client_id=${accessKey}`);  
+                if (!response.ok) {  
+                    throw new Error('Network response was not ok');  
+                }  
                 const data = await response.json();  
                 
                 // 使用较小的图片尺寸  
                 const imageUrl = data.urls.regular;  
                 
-                // 预加载图片  
-                const img = new Image();  
-                img.src = imageUrl;  
-                
-                img.onload = () => {  
-                    // 使用渐变过渡效果  
-                    desktop.style.transition = 'background-image 0.5s ease-in-out';  
-                    desktop.style.backgroundImage = `url('${imageUrl}')`;  
-                    
-                    // 移除占位符背景色  
-                    setTimeout(() => {  
-                        desktop.style.backgroundColor = 'transparent';  
-                    }, 500);  
-                };  
+                await loadImage(imageUrl);  
+                setBackgroundImage(desktop, imageUrl);  
             } catch (error) {  
                 console.error('Error fetching image from Unsplash:', error);  
+                // 使用备用背景  
+                const fallbackUrl = fallbackBackgrounds[Math.floor(Math.random() * fallbackBackgrounds.length)];  
+                await loadImage(fallbackUrl);  
+                setBackgroundImage(desktop, fallbackUrl);  
             }  
+        }  
+
+        function loadImage(url) {  
+            return new Promise((resolve, reject) => {  
+                const img = new Image();  
+                img.onload = resolve;  
+                img.onerror = reject;  
+                img.src = url;  
+            });  
+        }  
+
+        function setBackgroundImage(element, url) {  
+            element.style.transition = 'background-image 0.5s ease-in-out';  
+            element.style.backgroundImage = `url('${url}')`;  
+            
+            // 移除占位符背景色  
+            setTimeout(() => {  
+                element.style.backgroundColor = 'transparent';  
+            }, 500);  
         }  
 
         // 页面加载时设置随机背景  
